@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-time Sync App</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="glass-container">
+        <h1>Sync Demo</h1>
+        <p class="status">Holat: <span id="connection-status">Ulanmoqda...</span></p>
+        
+        <div class="control-group">
+            <label for="sync-text">Matn kiriting</label>
+            <input type="text" id="sync-text" placeholder="Bu yerga yozing...">
+        </div>
+
+        <div class="control-group">
+            <label>Rangni tanlang</label>
+            <div class="color-options">
+                <button class="color-btn" data-color="#ff4757" style="background-color: #ff4757;"></button>
+                <button class="color-btn" data-color="#2ed573" style="background-color: #2ed573;"></button>
+                <button class="color-btn" data-color="#1e90ff" style="background-color: #1e90ff;"></button>
+                <button class="color-btn" data-color="#ffa502" style="background-color: #ffa502;"></button>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label>O'chirib-yoqish (Toggle)</label>
+            <label class="switch">
+                <input type="checkbox" id="sync-toggle" checked>
+                <span class="slider round"></span>
+            </label>
+        </div>
+        
+        <div class="preview-box" id="preview-box">
+            Dinamik Oyna
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

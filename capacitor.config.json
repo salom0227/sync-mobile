@@ -1,0 +1,9 @@
+{
+  "appId": "com.payza.syncapp",
+  "appName": "Sync Demo",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "server": {
+    "cleartext": true
+  }
+}
