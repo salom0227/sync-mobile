@@ -4,19 +4,34 @@ const { Server } = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+    cors: { origin: "*" }
+});
 
-// Serve static files from the 'public' directory
-app.use(express.static('public'));
+// Statik fayllarni www papkasidan beramiz
+app.use(express.static('www'));
 
-// Listen for incoming Socket.io connections
+// WebRTC Signaling mantiqlari
 io.on('connection', (socket) => {
     console.log('Foydalanuvchi ulandi:', socket.id);
 
-    // Listen for 'state-change' event from a client
-    socket.on('state-change', (data) => {
-        // Broadcast the state change to ALL OTHER clients
-        socket.broadcast.emit('state-update', data);
+    socket.on('join-room', (roomId) => {
+        socket.join(roomId);
+        console.log(`${socket.id} joined room: ${roomId}`);
+        // Xonadagi boshqalarga yangi foydalanuvchi kirdi deb xabar beramiz
+        socket.to(roomId).emit('user-joined', socket.id);
+    });
+
+    socket.on('offer', (data) => {
+        socket.to(data.roomId).emit('offer', data);
+    });
+
+    socket.on('answer', (data) => {
+        socket.to(data.roomId).emit('answer', data);
+    });
+
+    socket.on('ice-candidate', (data) => {
+        socket.to(data.roomId).emit('ice-candidate', data);
     });
 
     socket.on('disconnect', () => {
@@ -26,5 +41,5 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server ishga tushdi: http://localhost:${PORT}`);
+    console.log(`WebRTC Signaling Server is running on port ${PORT}`);
 });

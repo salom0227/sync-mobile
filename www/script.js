@@ -1,112 +1,152 @@
 let socket;
+let peerConnection;
+let localStream;
+let roomId;
+let isViewer = false;
+
+const rtcConfig = {
+    iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun1.l.google.com:19302" }
+    ]
+};
 
 const connectScreen = document.getElementById('connect-screen');
-const appScreen = document.getElementById('app-screen');
+const roomScreen = document.getElementById('room-screen');
+const videoScreen = document.getElementById('video-screen');
 const ipInput = document.getElementById('ip-input');
-const connectBtn = document.getElementById('connect-btn');
-const disconnectBtn = document.getElementById('disconnect-btn');
+const roomIdInput = document.getElementById('room-id');
+const remoteVideo = document.getElementById('remote-video');
 
-// UI Elements
-const statusText = document.getElementById('connection-status');
-const textInput = document.getElementById('sync-text');
-const colorBtns = document.querySelectorAll('.color-btn');
-const toggleSwitch = document.getElementById('sync-toggle');
-const previewBox = document.getElementById('preview-box');
-
-// Ulanish tugmasi
-connectBtn.addEventListener('click', () => {
+document.getElementById('connect-btn').addEventListener('click', () => {
     let ip = ipInput.value.trim();
-    if (!ip) return alert('Iltimos havolani kiriting!');
+    if (!ip) return alert("Linkni kiriting");
     
-    // Oynalarni almashtirish
-    connectScreen.style.display = 'none';
-    appScreen.style.display = 'block';
-    statusText.textContent = 'Ulanmoqda...';
-    
-    // Serverga ulanish
     socket = io(ip, {
         transports: ['polling', 'websocket'],
-        extraHeaders: {
-            "bypass-tunnel-reminder": "true" // Localtunnel qulfini aylanib o'tish
-        }
+        extraHeaders: { "bypass-tunnel-reminder": "true" }
     });
 
     socket.on('connect', () => {
-        statusText.textContent = 'Ulandi';
-        statusText.classList.add('connected');
+        connectScreen.style.display = 'none';
+        roomScreen.style.display = 'block';
     });
 
-    socket.on('connect_error', (err) => {
-        console.error('Xatolik:', err);
-        statusText.textContent = 'Xato: ' + err.message;
-        statusText.classList.remove('connected');
-    });
+    socket.on('connect_error', (err) => alert("Xatolik: " + err.message));
 
-    socket.on('disconnect', () => {
-        statusText.textContent = 'Uzildi';
-        statusText.classList.remove('connected');
-    });
-
-    socket.on('state-update', (data) => {
-        const { key, value } = data;
-
-        if (key === 'text') {
-            textInput.value = value;
-            previewBox.textContent = value || 'Dinamik Oyna';
-        } 
-        else if (key === 'color') {
-            colorBtns.forEach(b => {
-                if (b.getAttribute('data-color') === value) {
-                    b.classList.add('active');
-                } else {
-                    b.classList.remove('active');
-                }
-            });
-            previewBox.style.backgroundColor = value;
-            previewBox.style.color = '#fff';
+    // WebRTC Signaling
+    socket.on('user-joined', async () => {
+        if (!isViewer) {
+            console.log("Kuzatuvchi kirdi, video offer yuborilmoqda...");
+            createOffer();
         }
-        else if (key === 'toggle') {
-            toggleSwitch.checked = value;
-            previewBox.style.opacity = value ? '1' : '0.2';
+    });
+
+    socket.on('offer', async (data) => {
+        if (isViewer) {
+            console.log("Video offer qabul qilindi, answer qaytarilmoqda...");
+            await handleOffer(data.offer);
+        }
+    });
+
+    socket.on('answer', async (data) => {
+        if (!isViewer && peerConnection) {
+            console.log("Answer qabul qilindi, ulanish o'rnatildi.");
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+        }
+    });
+
+    socket.on('ice-candidate', async (data) => {
+        if (peerConnection) {
+            try {
+                await peerConnection.addIceCandidate(data.candidate);
+            } catch (e) { console.error('ICE xatosi', e); }
         }
     });
 });
 
-disconnectBtn.addEventListener('click', () => {
-    if(socket) socket.disconnect();
-    appScreen.style.display = 'none';
-    connectScreen.style.display = 'block';
-});
+// START SHARING SCREEN (Sender)
+document.getElementById('share-btn').addEventListener('click', async () => {
+    roomId = roomIdInput.value.trim();
+    if (!roomId) return alert("Xona raqamini kiriting");
+    isViewer = false;
 
-// Broadcast changes to server
-function broadcastState(key, value) {
-    if(socket && socket.connected) {
-        socket.emit('state-change', { key, value });
+    try {
+        // Ekran yozishga ruxsat so'rash
+        localStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+        
+        socket.emit('join-room', roomId);
+        
+        roomScreen.style.display = 'none';
+        videoScreen.style.display = 'flex';
+        remoteVideo.srcObject = localStream; // O'ziga o'zini ko'rsatish
+
+        localStream.getVideoTracks()[0].onended = () => stopSharing();
+    } catch (err) {
+        alert("Ekranni ulashish bekor qilindi yoki brauzer ruxsat bermadi.");
     }
+});
+
+// START VIEWING SCREEN (Receiver)
+document.getElementById('view-btn').addEventListener('click', () => {
+    roomId = roomIdInput.value.trim();
+    if (!roomId) return alert("Xona raqamini kiriting");
+    isViewer = true;
+
+    socket.emit('join-room', roomId);
+    
+    roomScreen.style.display = 'none';
+    videoScreen.style.display = 'flex';
+});
+
+document.getElementById('stop-btn').addEventListener('click', stopSharing);
+
+function stopSharing() {
+    if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+    }
+    if (peerConnection) {
+        peerConnection.close();
+        peerConnection = null;
+    }
+    videoScreen.style.display = 'none';
+    roomScreen.style.display = 'block';
+    remoteVideo.srcObject = null;
 }
 
-// Event Listeners for local changes
-textInput.addEventListener('input', (e) => {
-    const text = e.target.value;
-    previewBox.textContent = text || 'Dinamik Oyna';
-    broadcastState('text', text);
-});
+function setupPeerConnection() {
+    peerConnection = new RTCPeerConnection(rtcConfig);
+    
+    // Yuboruvchi bo'lsa, o'z ekranini signalga qo'shadi
+    if (!isViewer && localStream) {
+        localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+    }
 
-colorBtns.forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        const color = e.target.getAttribute('data-color');
-        
-        colorBtns.forEach(b => b.classList.remove('active'));
-        e.target.classList.add('active');
-        previewBox.style.backgroundColor = color;
-        previewBox.style.color = '#fff';
+    // Qabul qiluvchi bo'lsa, kelgan videoni ekranga chiqaradi
+    peerConnection.ontrack = (event) => {
+        if (isViewer) {
+            remoteVideo.srcObject = event.streams[0];
+        }
+    };
 
-        broadcastState('color', color);
-    });
-});
+    peerConnection.onicecandidate = (event) => {
+        if (event.candidate) {
+            socket.emit('ice-candidate', { roomId: roomId, candidate: event.candidate });
+        }
+    };
+}
 
-toggleSwitch.addEventListener('change', (e) => {
-    const isChecked = e.target.checked;
-    previewBox.style.opacity = isChecked ? '1' : '0.2';
-    broadcastState('toggle', isChecked);
-});
+async function createOffer() {
+    setupPeerConnection();
+    const offer = await peerConnection.createOffer();
+    await peerConnection.setLocalDescription(offer);
+    socket.emit('offer', { roomId: roomId, offer: offer });
+}
+
+async function handleOffer(offer) {
+    setupPeerConnection();
+    await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+    const answer = await peerConnection.createAnswer();
+    await peerConnection.setLocalDescription(answer);
+    socket.emit('answer', { roomId: roomId, answer: answer });
+}

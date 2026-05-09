@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mobile Sync</title>
+    <title>WebRTC Screen Monitor</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Ulanish oynasi -->
+
+    <!-- 1. Server Ulanish Oynasi -->
     <div class="glass-container" id="connect-screen">
         <h1>Serverga ulanish</h1>
         <p class="status">Localtunnel havolasini kiriting</p>
@@ -18,41 +19,28 @@
         <button id="connect-btn" class="action-btn">Ulanish</button>
     </div>
 
-    <!-- Asosiy oyna -->
-    <div class="glass-container" id="app-screen" style="display: none;">
-        <h1>Sync Demo</h1>
-        <p class="status">Holat: <span id="connection-status">Ulanmoqda...</span></p>
+    <!-- 2. Xona va Rol tanlash oynasi -->
+    <div class="glass-container" id="room-screen" style="display: none;">
+        <h1>Ulanish Xonasi</h1>
+        <p class="status">Holat: <span id="connection-status" class="connected">Ulandi</span></p>
         
         <div class="control-group">
-            <label for="sync-text">Matn kiriting</label>
-            <input type="text" id="sync-text" placeholder="Bu yerga yozing...">
+            <label for="room-id">Maxfiy Kod (ID):</label>
+            <input type="text" id="room-id" placeholder="Masalan: bola123" value="bola123">
         </div>
 
-        <div class="control-group">
-            <label>Rangni tanlang</label>
-            <div class="color-options">
-                <button class="color-btn" data-color="#ff4757" style="background-color: #ff4757;"></button>
-                <button class="color-btn" data-color="#2ed573" style="background-color: #2ed573;"></button>
-                <button class="color-btn" data-color="#1e90ff" style="background-color: #1e90ff;"></button>
-                <button class="color-btn" data-color="#ffa502" style="background-color: #ffa502;"></button>
-            </div>
-        </div>
-
-        <div class="control-group">
-            <label>O'chirib-yoqish (Toggle)</label>
-            <label class="switch">
-                <input type="checkbox" id="sync-toggle" checked>
-                <span class="slider round"></span>
-            </label>
-        </div>
-        
-        <div class="preview-box" id="preview-box">
-            Dinamik Oyna
-        </div>
-        <button id="disconnect-btn" class="action-btn" style="margin-top: 20px; background: rgba(255,71,87,0.2); border-color: #ff4757; color: #ff4757;">Uzish</button>
+        <button id="share-btn" class="action-btn share-btn">Ekranimni Berish (Farzand telefoni)</button>
+        <button id="view-btn" class="action-btn view-btn">Kuzatish (Ota-ona telefoni)</button>
     </div>
 
-    <!-- Socket.io CDN kerak, chunki telefon o'zidagi serverga emas tashqariga ulanadi -->
+    <!-- 3. Video Oynasi -->
+    <div id="video-screen" style="display: none;">
+        <video id="remote-video" autoplay playsinline></video>
+        <div class="controls-overlay">
+            <button id="stop-btn" class="action-btn stop-btn">Tugatish / Chiqish</button>
+        </div>
+    </div>
+
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script src="script.js"></script>
 </body>
