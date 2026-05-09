@@ -2,13 +2,24 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Real-time Sync App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mobile Sync</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="glass-container">
+    <!-- Ulanish oynasi -->
+    <div class="glass-container" id="connect-screen">
+        <h1>Serverga ulanish</h1>
+        <p class="status">Localtunnel havolasini kiriting</p>
+        <div class="control-group">
+            <input type="text" id="ip-input" placeholder="https://nimadir.loca.lt">
+        </div>
+        <button id="connect-btn" class="action-btn">Ulanish</button>
+    </div>
+
+    <!-- Asosiy oyna -->
+    <div class="glass-container" id="app-screen" style="display: none;">
         <h1>Sync Demo</h1>
         <p class="status">Holat: <span id="connection-status">Ulanmoqda...</span></p>
         
@@ -38,9 +49,11 @@
         <div class="preview-box" id="preview-box">
             Dinamik Oyna
         </div>
+        <button id="disconnect-btn" class="action-btn" style="margin-top: 20px; background: rgba(255,71,87,0.2); border-color: #ff4757; color: #ff4757;">Uzish</button>
     </div>
 
-    <script src="/socket.io/socket.io.js"></script>
+    <!-- Socket.io CDN kerak, chunki telefon o'zidagi serverga emas tashqariga ulanadi -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
